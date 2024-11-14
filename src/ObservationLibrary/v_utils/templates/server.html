@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Local Video Server</title>
+    </head>
+    <body>
+        <h1>Local Video Files</h1>
+        <button onclick="window.location.reload();">Reload Video List</button>
+        <ul>
+            {% if videos %} {% for video in videos %}
+            <li>
+                <p>{{ video }}</p>
+                <video width="320" height="240" controls>
+                    <source src="{{ video }}" type="{{ video_type(video) }}" />
+                    Your browser does not support the video tag.
+                </video>
+            </li>
+            {% endfor %} {% else %}
+            <li>No video files found in this directory.</li>
+            {% endif %}
+        </ul>
+    </body>
+</html>
