@@ -1,13 +1,14 @@
 import os
 import signal
-import subprocess
+import socketserver
+from multiprocessing import Process
 from threading import Thread
 
 import ipyvuetify as v
 import ipywidgets as widgets
-import numpy as np
 import traitlets
 
+from ..video_server import run_server
 from .v_progress_bar import ProgressBar
 from .v_video_container import VideoContainer
 
@@ -29,22 +30,16 @@ class VideoSnippetDisplay(v.VuetifyTemplate):  # type: ignore
 
     def __init__(self, snippet):
         self.thread = None
-        while True:
-            try:
-                self.port = np.random.randint(8000, 9000)
-                self.server_process = subprocess.Popen(
-                    [
-                        "python",
-                        "video_server.py",
-                        "-p",
-                        str(self.port),
-                        "-d",
-                        "video_server",
-                    ]
-                )
-                break
-            except OSError:
-                pass
+        with socketserver.TCPServer(("localhost", 0), None) as s:  # type: ignore
+            self.port = s.server_address[1]
+        self.server_process = Process(
+            target=run_server,
+            kwargs={
+                "video_directory": self.snippet.video_server_directory,
+                "port": self.port,
+            },
+        )
+        self.server_process.start()
         self.snippet = snippet
         self.progress_bar = ProgressBar(label="Preparing video:", style_="height: 25px")
         self.progress_bar_container = v.Layout(
@@ -65,7 +60,10 @@ class VideoSnippetDisplay(v.VuetifyTemplate):  # type: ignore
         super().__init__()
 
     def interrupt_server_process(self):
-        self.server_process.send_signal(signal.SIGINT)
+        if self.server_process is None or (pid := self.server_process.pid) is None:
+            return
+        os.kill(pid, signal.SIGINT)
+        self.server_process.join()
 
     def interrupt(self):
         if self.thread is None:
