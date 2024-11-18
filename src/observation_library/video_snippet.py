@@ -269,11 +269,9 @@ class VideoSnippet:
         dsize = (self.scaled_width, self.scaled_height)
 
         padded_roi = self.padded_roi
-        roi_height_factor = 1
+        overlay_scale = 1
         if padded_roi is not None:
-            roi_height_factor = self.video_height / (padded_roi[3] - padded_roi[1])
-
-        overlay_scale = roi_height_factor * self.video_height / self.frame_height
+            overlay_scale = self.video_height / (padded_roi[3] - padded_roi[1])
 
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, int(self.padded_start))
         count = 0
@@ -285,8 +283,9 @@ class VideoSnippet:
         thread = current_thread()
         success = True
 
-        dpi = 300 * dsize[1] / 1080
-        fig = plt.figure(figsize=(dsize[0] / dpi, dsize[1] / dpi), dpi=dpi)
+        # dpi = dsize[1] * 150 / self.video_height
+        # dpi_factor = self.video_height / dsize[1]
+        fig = plt.figure(figsize=(dsize[0] / 300, dsize[1] / 300), dpi=300)
         ax = fig.add_axes((0, 0, 1, 1))
 
         actor = None
@@ -387,22 +386,21 @@ class VideoSnippet:
                         trajectory = trajectory.slice_window(frame_idx, frame_idx)
                     except OutOfInterval:
                         continue
-                    keypoints = ptf.keypoints(
-                        trajectory, keypoints=(0, 1, 2, 3, 4, 5, 6)
-                    )[0]
-                    segments = ptf.posture_segments(
-                        trajectory,
-                        keypoint_pairs=(
-                            (0, 1),
-                            (0, 2),
-                            (1, 3),
-                            (2, 3),
-                            (3, 4),
-                            (3, 5),
-                            (4, 6),
-                            (5, 6),
-                        ),
-                    )[0]
+                    try:
+                        keypoints = ptf.keypoints(
+                            trajectory,
+                            keypoints=tuple(self.render_settings.keypoints),
+                        )
+                        segments = ptf.posture_segments(
+                            trajectory,
+                            keypoint_pairs=tuple(self.render_settings.get_segments()),
+                        )
+                    except IndexError as e:
+                        print(e, flush=True)
+                        success = False
+                        break
+                    keypoints = keypoints[0]
+                    segments = segments[0]  # only one timestamp
 
                     if padded_roi is None:
                         # simple case without roi
@@ -445,7 +443,7 @@ class VideoSnippet:
                         LineCollection(
                             segments,
                             color=color,
-                            lw=2 * overlay_scale,
+                            lw=2.5 * overlay_scale,
                             transform=ax.transAxes,
                             zorder=zorder,
                         )
@@ -458,6 +456,9 @@ class VideoSnippet:
                         transform=ax.transAxes,
                         zorder=zorder,
                     )
+
+            if not success:
+                break
 
             overlay = figure_to_numpy(fig)
 

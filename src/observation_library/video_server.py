@@ -12,6 +12,9 @@ class VideoHandler(http.server.SimpleHTTPRequestHandler):
         self.port = port
         super().__init__(*args, **kwargs)
 
+    # def log_request(self, code="-", size="-"):
+    #     return
+
     def do_GET(self):
         if self.path == "/":
             videos = [
@@ -28,9 +31,10 @@ class VideoHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
     def generate_html(self, videos):
-        template_file = os.path.join(os.path.dirname(__file__), "templates/server.html")
+        template_file = os.path.join(os.path.dirname(__file__), "server.html")
         with open(template_file, "r") as f:
             template = Template(f.read())
+        print(template, flush=True)
         return template.render(videos=videos, video_type=self.get_video_type)
 
     def get_video_type(self, video_filename):
@@ -43,19 +47,22 @@ class VideoHandler(http.server.SimpleHTTPRequestHandler):
         return "video/mp4"  # Default type
 
 
-def run_server(video_directory: str, *, port: int = 8000):
+def run_server(video_directory: str, *, port: int = 8000, verbose: bool = False):
     def handler(*args, **kwargs):
-        return VideoHandler(*args, video_directory=video_directory, **kwargs)
+        return VideoHandler(*args, video_directory=video_directory, port=port, **kwargs)
 
     with socketserver.TCPServer(("", port), handler) as httpd:
-        print(f"Serving at port {port} from {video_directory}")
+        if verbose:
+            print(f"Serving at port {port} from {video_directory}")
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\nShutting down the server...")
+            if verbose:
+                print("\nShutting down the server...")
         finally:
             httpd.server_close()  # Release the port
-            print("Server closed.")
+            if verbose:
+                print("Server closed.")
 
 
 if __name__ == "__main__":

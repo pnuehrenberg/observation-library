@@ -1,4 +1,5 @@
 from typing import Any, List, Tuple
+from itertools import combinations
 
 import traitlets
 
@@ -14,8 +15,15 @@ class RenderSettings(traitlets.HasTraits):
     crop_roi = traitlets.Bool(default_value=True).tag(config=True, sync=True)
     roi_padding = traitlets.Int(default_value=100, min=0).tag(config=True, sync=True)
 
-    draw_trajectories = traitlets.Bool(default_value=True).tag(config=True, sync=True)
     # trajectories related settings
+    draw_trajectories = traitlets.Bool(default_value=True).tag(config=True, sync=True)
+    available_keypoints = traitlets.List(default_value=[]).tag(config=True, sync=True)
+    keypoints = traitlets.List(default_value=[]).tag(config=True, sync=True)
+    available_segments = traitlets.List(default_value=[]).tag(config=True, sync=True)
+    segments = traitlets.List(default_value=[]).tag(config=True, sync=True)
+    segment_separator = traitlets.Unicode(default_value=" - ", read_only=True).tag(
+        sync=True
+    )
     actor_color = traitlets.Any(default_value="#FF6965").tag(
         config=True, sync=True
     )  # rgb tuple or hex
@@ -75,6 +83,13 @@ class RenderSettings(traitlets.HasTraits):
     def apply_highlight_color_to_recipient(self) -> bool:
         return 1 in self.apply_highlight_color_to
 
+    def get_segments(self) -> tuple[tuple[int, int], ...]:
+        def parse_segment(segment) -> tuple[int, int]:
+            start, end = segment.split(self.segment_separator)
+            return int(start), int(end)
+
+        return tuple(parse_segment(segment) for segment in self.segments)
+
     @traitlets.validate("size_preset")
     def _size_preset_validation(self, proposal) -> str:
         if (value := proposal["value"]) not in self.size_preset_options:
@@ -110,6 +125,37 @@ class RenderSettings(traitlets.HasTraits):
             self.max_render_width, self.max_render_height
         )
 
+    @traitlets.observe("available_keypoints")
+    def _on_available_keypoints_change(self, change) -> None:
+        keypoints = []
+        for keypoint in self.keypoints:
+            if keypoint not in self.available_keypoints:
+                continue
+            keypoints.append(keypoint)
+        if len(keypoints) == 0 and len(self.available_keypoints) > 0:
+            # default to all
+            keypoints = self.available_keypoints
+        self.keypoints = keypoints
+
+    @traitlets.observe("keypoints")
+    def _on_keypoints_change(self, change) -> None:
+        self.available_segments = [
+            f"{start}{self.segment_separator}{end}"
+            for start, end in list(combinations(self.keypoints, 2))
+        ]
+        segments = []
+        for segment in self.segments:
+            if segment not in self.available_segments:
+                continue
+            segments.append(segment)
+        if len(segments) == 0 and len(self.keypoints) > 1:
+            # default to simple segmented line
+            segments = [
+                f"{start}{self.segment_separator}{end}"
+                for start, end in zip(self.keypoints[:-1], self.keypoints[1:])
+            ]
+        self.segments = segments
+
     def reset(self) -> None:
         for name, trait in RenderSettings().traits().items():
             if "config" not in trait.metadata:
@@ -122,6 +168,7 @@ class RenderSettings(traitlets.HasTraits):
             getattr(self, name)
             for name, trait in RenderSettings().traits().items()
             if "config" in trait.metadata
+            and name not in ["available_keypoints", "available_segments"]
         ]
 
     def config_keys(self) -> List[str]:
@@ -129,6 +176,7 @@ class RenderSettings(traitlets.HasTraits):
             name
             for name, trait in RenderSettings().traits().items()
             if "config" in trait.metadata
+            and name not in ["available_keypoints", "available_segments"]
         ]
 
     def config(self) -> dict[str, Any]:

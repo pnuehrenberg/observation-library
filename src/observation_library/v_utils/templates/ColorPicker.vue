@@ -1,8 +1,13 @@
 <template>
     <v-menu offset-y :open-on-hover="true" :close-on-content-click="false">
         <template v-slot:activator="{ on, attrs }">
-            <div>
-                <div class="mb-1 caption text--secondary">{{ label }}</div>
+            <div
+                class="px-2 d-inline-flex flex-column align-self-end"
+                style="min-width: 60px"
+            >
+                <div v-if="label" class="mb-1 caption text--secondary">
+                    {{ label }}
+                </div>
                 <v-btn
                     outlined
                     icon

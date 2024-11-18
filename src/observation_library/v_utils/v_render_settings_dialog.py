@@ -1,5 +1,5 @@
 import ipyvuetify as v
-from vTableApp.v_dialog import Dialog
+from interactive_table.v_dialog import Dialog
 
 from .v_render_settings_input import RenderSettingsInput
 

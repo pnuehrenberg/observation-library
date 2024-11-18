@@ -29,6 +29,7 @@ class VideoSnippetDisplay(v.VuetifyTemplate):  # type: ignore
             """
 
     def __init__(self, snippet):
+        self.snippet = snippet
         self.thread = None
         with socketserver.TCPServer(("localhost", 0), None) as s:  # type: ignore
             self.port = s.server_address[1]
@@ -40,7 +41,6 @@ class VideoSnippetDisplay(v.VuetifyTemplate):  # type: ignore
             },
         )
         self.server_process.start()
-        self.snippet = snippet
         self.progress_bar = ProgressBar(label="Preparing video:", style_="height: 25px")
         self.progress_bar_container = v.Layout(
             children=[self.progress_bar],
@@ -83,19 +83,19 @@ class VideoSnippetDisplay(v.VuetifyTemplate):  # type: ignore
             if video_snippet_dialog is not None:
                 video_snippet_dialog.show_actions = True
             if success:
+                self.active_widget = self.video_container
                 self.video_container.url = (
                     f"http://localhost:{self.port}/{self.snippet.output_file}"
                 )
-                self.active_widget = self.video_container
             self.progress_bar.value = 0
 
         if self.thread is not None:
             self.interrupt()
         if os.path.exists(self.snippet.output_file):
+            self.active_widget = self.video_container
             self.video_container.url = (
                 f"http://localhost:{self.port}/{self.snippet.output_file}"
             )
-            self.active_widget = self.video_container
             return True
         self.thread = Thread(target=_cut)
         self.thread.start()

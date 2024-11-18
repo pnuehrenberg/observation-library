@@ -1,5 +1,5 @@
 <template>
-    <v-sheet class="ma-2" style="width: 600px">
+    <v-sheet class="ma-2" style="width: 700px">
         <v-tabs vertical>
             <v-tab
                 v-for="item in ['video', 'trajectories', 'categories']"
@@ -10,9 +10,9 @@
 
             <v-tab-item>
                 <div
-                    class="ma-2 ml-4 d-inline-flex flex-column flex-align-start"
+                    class="ma-2 ml-4 d-inline-flex flex-column align-self-start"
                 >
-                    <div class="d-inline-flex flex-row flex-align-start">
+                    <div class="d-inline-flex flex-row align-self-start">
                         <v-select
                             v-model="size_preset"
                             :items="size_preset_options"
@@ -31,7 +31,7 @@
                             style="width: 70px"
                         />
                     </div>
-                    <div class="d-inline-flex flex-row flex-align-start">
+                    <div class="d-inline-flex flex-row align-self-start">
                         <v-switch
                             v-model="crop_roi"
                             label="Crop trajectory ROI"
@@ -57,9 +57,9 @@
             </v-tab-item>
             <v-tab-item>
                 <div
-                    class="ma-2 ml-4 d-inline-flex flex-column flex-align-start"
+                    class="ma-2 ml-4 d-inline-flex flex-column align-self-start"
                 >
-                    <div class="d-inline-flex flex-row flex-align-start">
+                    <div class="d-inline-flex flex-row align-self-start">
                         <v-switch
                             v-model="draw_trajectories"
                             label="Draw trajectories"
@@ -86,32 +86,64 @@
                     </div>
                     <v-expand-transition>
                         <div v-show="draw_trajectories">
-                            <v-row class="mx-2 pb-7">
-                                <jupyter-widget
-                                    :widget="actor_color_input"
-                                    class="mx-2"
-                                    style="width: 60px"
-                                />
-                                <jupyter-widget
-                                    :widget="recipient_color_input"
-                                    class="mx-2"
-                                    style="width: 60px"
-                                />
-                                <jupyter-widget
-                                    :widget="other_color_input"
-                                    class="mx-2"
-                                    style="width: 60px"
-                                />
-                            </v-row>
+                            <v-column>
+                                <v-row class="mx-2">
+                                    <v-select
+                                        label="Keypoints"
+                                        placeholder="Select keypoints"
+                                        v-model="keypoints"
+                                        :items="available_keypoints"
+                                        multiple
+                                        chips
+                                        deletable-chips
+                                        clearable
+                                        hide-details
+                                        class="mx-2 pb-4"
+                                        style="width: 100%"
+                                    >
+                                    </v-select>
+                                    <v-select
+                                        label="Segments"
+                                        placeholder="Select segments"
+                                        v-model="segments"
+                                        :items="available_segments"
+                                        multiple
+                                        chips
+                                        deletable-chips
+                                        clearable
+                                        hide-details
+                                        class="mx-2 pb-4"
+                                        style="width: 100%"
+                                    >
+                                    </v-select>
+                                </v-row>
+                                <v-row class="mx-2 pb-7">
+                                    <jupyter-widget
+                                        :widget="actor_color_input"
+                                        class="mx-2"
+                                        style="width: 60px"
+                                    />
+                                    <jupyter-widget
+                                        :widget="recipient_color_input"
+                                        class="mx-2"
+                                        style="width: 60px"
+                                    />
+                                    <jupyter-widget
+                                        :widget="other_color_input"
+                                        class="mx-2"
+                                        style="width: 60px"
+                                    />
+                                </v-row>
+                            </v-column>
                         </div>
                     </v-expand-transition>
                 </div>
             </v-tab-item>
             <v-tab-item>
                 <div
-                    class="ma-2 ml-4 d-inline-flex flex-column flex-align-start"
+                    class="ma-2 ml-4 d-inline-flex flex-column align-self-start"
                 >
-                    <div class="my-2 d-inline-flex flex-row flex-align-start">
+                    <div class="my-2 d-inline-flex flex-row align-self-start">
                         <v-switch
                             v-model="draw_label"
                             label="Draw label"
@@ -136,7 +168,7 @@
                             />
                         </v-fade-transition>
                     </div>
-                    <div class="my-2 d-inline-flex flex-row flex-align-start">
+                    <div class="my-2 d-inline-flex flex-row align-self-start">
                         <v-switch
                             v-model="highlight"
                             label="Enable highlighting"
@@ -156,24 +188,30 @@
                     <v-expand-transition>
                         <div v-show="highlight">
                             <div
-                                class="my-2 d-inline-flex flex-row flex-align-start"
+                                class="my-2 d-inline-flex flex-row align-self-start"
                             >
                                 <v-select
-                                    clearable
-                                    v-model="selected_category"
                                     :items="categories"
+                                    v-model="selected_category"
                                     label="Override highlight color"
                                     placeholder="Select category"
+                                    clearable
+                                    hide-details
                                     class="mx-2"
                                     style="max-width: 200px"
                                 ></v-select>
                                 <v-fade-transition>
-                                    <jupyter-widget
+                                    <div
                                         v-show="selected_category"
-                                        :widget="override_highlight_color_input"
-                                        class="mx-2 mt-2"
-                                        style="width: 60px"
-                                    />
+                                        class="mt-2"
+                                    >
+                                        <jupyter-widget
+                                            :widget="
+                                                override_highlight_color_input
+                                            "
+                                            style="width: 60px"
+                                        />
+                                    </div>
                                 </v-fade-transition>
                                 <v-fade-transition>
                                     <v-btn
@@ -183,7 +221,7 @@
                                         "
                                         icon
                                         x-small
-                                        class="mt-1 ml-n8"
+                                        class="mt-1 ml-n5"
                                         @click="reset_override_highlight_color"
                                     >
                                         <v-icon>mdi-replay</v-icon>

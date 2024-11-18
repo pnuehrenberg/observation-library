@@ -1,7 +1,7 @@
 import ipyvuetify as v
 import ipywidgets as widgets
 import traitlets
-from vTableApp.v_bounded_input import BoundedInput
+from interactive_table.v_bounded_input import BoundedInput
 
 from ..render_settings import RenderSettings
 from .v_color_picker import ColorPicker

@@ -1,15 +1,27 @@
 import ipyvuetify as v
+import pandas as pd
+from typing import Type, Literal
+from collections.abc import Callable
+
 from lazyfilter import lazy_filter
-from vTableApp.v_callbacks_button import CallbacksButton
-from vTableApp.v_data_table import DataTable
-from vTableApp.v_dialog import Dialog
+from interactive_table import InteractiveTable
+from interactive_table.v_callbacks_button import CallbacksButton
+from interactive_table.v_dialog import Dialog
 
 from .v_utils.v_render_settings_dialog import RenderSettingsDialog
 from .v_utils.v_video_snippet_display import VideoSnippetDisplay
 from .video_snippet import VideoSnippet
 
 
-class ObservationLibrary(DataTable):
+def is_same_observation(observation, reference):
+    return all([observation[key] == reference[key] for key in observation])
+
+
+def is_same_category(observation, reference):
+    return observation["category"] == reference["category"]
+
+
+class ObservationLibrary(InteractiveTable):
     def __init__(
         self,
         observations,
@@ -18,6 +30,10 @@ class ObservationLibrary(DataTable):
         trajectory_lookup=None,
         filter_dependencies=None,
         video_snippet_directory="video_snippets",
+        selected_observations_mode: Literal["selected", "dyad"] = "dyad",
+        highlight_observations_mode: (
+            Literal["selected", "category"] | Callable[[dict, dict], bool]
+        ) = "selected",
     ):
         self.observations = observations
         self.render_settings_dialog = RenderSettingsDialog()
@@ -38,7 +54,6 @@ class ObservationLibrary(DataTable):
         self.reload_video_snippet = CallbacksButton(
             icon=True,
             children=[v.Icon(children=["mdi-replay"])],
-            callbacks=[lambda: self.video_snippet_display.cut()],
         )
         self.video_snippet_dialog = Dialog(
             content=[self.video_snippet_display],
@@ -57,14 +72,22 @@ class ObservationLibrary(DataTable):
                 or True,
             ],
         )
-        self.video_snippet_dialog.on_open_callbacks = [
+        self.reload_video_snippet.callbacks = [
             lambda: self.video_snippet_display.cut(
                 video_snippet_dialog=self.video_snippet_dialog
             )
         ]
+        self.video_snippet_dialog.on_open_callbacks = (
+            self.reload_video_snippet.callbacks
+        )
         self.video_lookup = video_lookup
         self.trajectory_lookup = trajectory_lookup
-
+        self.selected_observations_mode: Literal["selected", "dyad"] = (
+            selected_observations_mode
+        )
+        self.highlight_observations_mode: (
+            Literal["selected", "category"] | Callable[[dict, dict], bool]
+        ) = highlight_observations_mode
         super().__init__(
             self.observations,
             filter_dependencies=filter_dependencies,
@@ -84,29 +107,37 @@ class ObservationLibrary(DataTable):
 
     def open_video_snippet_dialog(self, observation):
         self.set_observation(observation)
-        # snippet.observation_data = {
-        #     "observations": [observation],
-        #     "highlight": [0],
-        # }
-        observations = lazy_filter(self.observations).update(
-            {
-                "group": ("selected_values", [observation["group"]]),
-                "actor": ("selected_values", ["resident"]),
-                "recipient": ("selected_values", ["intruder"]),
+        if self.selected_observations_mode == "selected":
+            observations = [observation]
+        else:
+            selection: dict[str | Type[pd.Index], tuple] = {
+                "group": ("selected_values", (observation["group"],)),
+                "actor": ("selected_values", (observation["actor"],)),
             }
-        )
-        # highlight = []
-        # try:
-        #     highlight = [observations.index.tolist().index(observation["index"])]
-        # except ValueError:
-        #     pass
-        highlight = [
-            idx
-            for idx, row in observations.iterrows()
-            if row["category"] == observation["category"]
-        ]
+            if "recipient" in observation:
+                selection["recipient"] = (
+                    "selected_values",
+                    (observation["recipient"],),
+                )
+            observations = (
+                lazy_filter(self.observations)
+                .update(selection)
+                .to_dict(orient="records")
+            )
+        highlight = []
+        for idx, selected_observation in enumerate(observations):
+            if self.highlight_observations_mode == "selected":
+                if not is_same_observation(selected_observation, observation):
+                    continue
+                highlight.append(idx)
+            elif self.highlight_observations_mode == "category":
+                if not is_same_category(selected_observation, observation):
+                    continue
+                highlight.append(idx)
+            elif self.highlight_observations_mode(selected_observation, observation):
+                highlight.append(idx)
         self.video_snippet.observation_data = {
-            "observations": observations.to_dict(orient="records"),
+            "observations": observations,
             "highlight": highlight,
         }
         self.video_snippet_dialog.dialog = True
