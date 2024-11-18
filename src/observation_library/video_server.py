@@ -20,7 +20,7 @@ class VideoHandler(http.server.SimpleHTTPRequestHandler):
             videos = [
                 os.path.join(self.video_directory, video_file)
                 for video_file in os.listdir(self.video_directory)
-                if video_file.endswith((".mp4", ".avi", ".mov"))
+                if video_file.lower().endswith((".mp4", ".avi", ".mov"))
             ]
             content = self.generate_html(videos).encode("utf-8")
             self.send_response(200)
@@ -34,15 +34,14 @@ class VideoHandler(http.server.SimpleHTTPRequestHandler):
         template_file = os.path.join(os.path.dirname(__file__), "server.html")
         with open(template_file, "r") as f:
             template = Template(f.read())
-        print(template, flush=True)
         return template.render(videos=videos, video_type=self.get_video_type)
 
     def get_video_type(self, video_filename):
-        if video_filename.endswith(".mp4"):
+        if video_filename.lower().endswith(".mp4"):
             return "video/mp4"
-        elif video_filename.endswith(".avi"):
+        elif video_filename.lower().endswith(".avi"):
             return "video/x-msvideo"
-        elif video_filename.endswith(".mov"):
+        elif video_filename.lower().endswith(".mov"):
             return "video/quicktime"
         return "video/mp4"  # Default type
 
