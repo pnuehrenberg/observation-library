@@ -5,7 +5,7 @@
         :loop="loop"
         :autoplay="autoplay"
         controls
-        id="video"
+        :id="id"
     >
         <source :src="url" type="video/mp4" />
     </video>
@@ -15,7 +15,7 @@
 export default {
     methods: {
         reload() {
-            var video = document.getElementById("video");
+            var video = document.getElementById(this.id);
             video.load();
         },
     },

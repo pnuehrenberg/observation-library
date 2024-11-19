@@ -6,70 +6,20 @@ from threading import current_thread
 import cv2
 import imageio
 import matplotlib.pyplot as plt
-import numpy as np
 import pyTrajectory.features as ptf
-from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.collections import LineCollection
-from PIL import Image
 from pyTrajectory.data_structures.utils import OutOfInterval
 from pyTrajectory.visualization import get_trajectory_range
 
 from .multi_video_capture import MultiVideoCapture
 from .render_settings import RenderSettings
+from .utils import ImageOverlay, adjust_lightness, crop_and_scale
 
 
 def hash_dict(dictionary):
     return hashlib.sha1(
         json.dumps(dictionary, sort_keys=True).encode("utf-8")
     ).hexdigest()
-
-
-def figure_to_numpy(fig):
-    fig.patch.set_facecolor((0, 0, 0, 0))
-    for ax in fig.get_axes():
-        ax.axis("off")
-
-    canvas = FigureCanvasAgg(fig)
-    canvas.draw()
-
-    *_, width, height = canvas.figure.bbox.bounds
-    width, height = int(width), int(height)
-
-    buffer = canvas.buffer_rgba()
-    img = np.frombuffer(buffer, dtype=np.uint8)
-    return img.reshape(height, width, 4)
-
-
-def to_rgb(image, color=(255, 255, 255)):
-    """
-    http://stackoverflow.com/a/9459208/284318
-    """
-    image.load()
-    background = Image.new("RGB", image.size, color)
-    background.paste(image, mask=image.split()[3])
-    return background
-
-
-def adjust_lightness(color, amount):
-    import colorsys
-
-    import matplotlib.colors as mc
-
-    try:
-        c = mc.cnames[color]
-    except KeyError:
-        c = color
-    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
-    return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
-
-
-def closest_divisible(number: float, divisor: int) -> int:
-    remainder = number % divisor
-    closest_smaller_number = number - remainder
-    closest_greater_number = (number + divisor) - remainder
-    if (number - closest_smaller_number) > (closest_greater_number - number):
-        return int(closest_greater_number)
-    return int(closest_smaller_number)
 
 
 def get_roi(trajectories, individuals, interval):
@@ -185,56 +135,6 @@ class VideoSnippet:
         return int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     @property
-    def frame_width(self):
-        width = self.video_width
-        if (padded_roi := self.padded_roi) is None:
-            return width
-        x1, x2 = padded_roi[0], padded_roi[2]
-        if x1 < 0:
-            raise ValueError("invalid ROI")
-        if x2 > width - 1:
-            raise ValueError("invalid ROI")
-        return x2 - x1 + 1
-
-    @property
-    def frame_height(self):
-        height = self.video_height
-        if (padded_roi := self.padded_roi) is None:
-            return height
-        y1, y2 = padded_roi[1], padded_roi[3]
-        if y1 < 0:
-            raise ValueError("invalid ROI")
-        if y2 > height - 1:
-            raise ValueError("invalid ROI")
-        return y2 - y1 + 1
-
-    @property
-    def _scale(self):
-        return min(
-            self.render_settings.max_render_height / self.frame_height,
-            self.render_settings.max_render_width / self.frame_width,
-        )
-
-    @property
-    def scaled_width(self):
-        return closest_divisible(
-            self.frame_width * self._scale, self.render_settings.macro_block_size
-        )
-
-    @property
-    def scaled_height(self):
-        return closest_divisible(
-            self.frame_height * self._scale, self.render_settings.macro_block_size
-        )
-
-    @property
-    def scale(self):
-        return (
-            self.scaled_width / self.frame_width,
-            self.scaled_height / self.frame_height,
-        )
-
-    @property
     def output_file(self):
         if self.video_files is None:
             raise ValueError("specify video_files")
@@ -266,13 +166,7 @@ class VideoSnippet:
         if not os.path.exists(self.video_server_directory):
             os.makedirs(self.video_server_directory, exist_ok=True)
         num_frames = int(self.padded_stop) - int(self.padded_start)
-        dsize = (self.scaled_width, self.scaled_height)
-
         padded_roi = self.padded_roi
-        overlay_scale = 1
-        if padded_roi is not None:
-            overlay_scale = self.video_height / (padded_roi[3] - padded_roi[1])
-
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, int(self.padded_start))
         count = 0
         writer = imageio.get_writer(
@@ -283,11 +177,7 @@ class VideoSnippet:
         thread = current_thread()
         success = True
 
-        # dpi = dsize[1] * 150 / self.video_height
-        # dpi_factor = self.video_height / dsize[1]
-        fig = plt.figure(figsize=(dsize[0] / 300, dsize[1] / 300), dpi=300)
-        ax = fig.add_axes((0, 0, 1, 1))
-
+        overlay = None
         actor = None
         recipient = None
         if (
@@ -306,16 +196,23 @@ class VideoSnippet:
             if not ret or frame is None:
                 success = False
                 break
-            if padded_roi is not None:
-                frame = frame[
-                    padded_roi[1] : (padded_roi[3] + 1),
-                    padded_roi[0] : (padded_roi[2] + 1),
-                ]
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-            frame = cv2.resize(frame, dsize=dsize)
+            frame_cropped, frame_scaled = crop_and_scale(
+                frame,
+                roi=padded_roi,
+                max_width=self.render_settings.max_render_width,
+                max_height=self.render_settings.max_render_height,
+                block_size=self.render_settings.macro_block_size,
+            )
+            frame_scaled = cv2.cvtColor(frame_scaled, cv2.COLOR_BGR2RGBA)
+            if overlay is None:
+                overlay = ImageOverlay(
+                    original_size=frame.shape[:2][::-1],
+                    crop_size=frame_cropped.shape[:2][::-1],
+                    render_size=frame_scaled.shape[:2][::-1],
+                )
 
             # overlay plotting
-            ax.clear()
+            ax = overlay.get_axes()
             if "observations" in self.observation_data:
                 observations = self.observation_data["observations"]
                 frame_idx = self.cap.frame - 1  # reading increments to the next
@@ -443,36 +340,30 @@ class VideoSnippet:
                         LineCollection(
                             segments,
                             color=color,
-                            lw=2.5 * overlay_scale,
+                            lw=overlay.get_pixel_size(
+                                self.render_settings.overlay_size / 2
+                            ),
                             transform=ax.transAxes,
                             zorder=zorder,
                         )
                     )
                     ax.scatter(
                         *keypoints.T,
-                        s=25 * (overlay_scale**2),
+                        s=overlay.get_pixel_size(self.render_settings.overlay_size)
+                        ** 2,
                         c=color,
                         lw=0,
                         transform=ax.transAxes,
                         zorder=zorder,
                     )
-
             if not success:
                 break
-
-            overlay = figure_to_numpy(fig)
-
-            overlay = Image.fromarray(overlay)
-            frame = Image.fromarray(frame)
-            frame.paste(overlay, (0, 0), overlay)
-            frame = np.asarray(to_rgb(frame))
-
-            writer.append_data(frame)
-
+            writer.append_data(overlay.draw_overlay(frame_scaled))
             count += 1
             if progress_bar is not None:
                 progress_bar.value = 100 * count / num_frames
-        plt.close(fig)
+        if overlay is not None:
+            plt.close(overlay.fig)
         writer.close()
         if not success and os.path.exists(self.output_file):
             os.remove(self.output_file)

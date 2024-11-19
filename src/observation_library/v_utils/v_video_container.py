@@ -1,3 +1,5 @@
+import datetime
+
 import ipyvuetify as v
 import traitlets
 
@@ -6,15 +8,27 @@ class VideoContainer(v.VuetifyTemplate):  # type: ignore
     template_file = (__file__, "templates/VideoContainer.vue")
 
     url = traitlets.Unicode().tag(sync=True)
+    id = traitlets.Unicode().tag(sync=True)
     loop = traitlets.Bool().tag(sync=True)
     autoplay = traitlets.Bool().tag(sync=True)
     class_ = traitlets.Unicode().tag(sync=True)
     style_ = traitlets.Unicode().tag(sync=True)
 
     def __init__(
-        self, *args, url, loop=False, autoplay=False, class_="", style_="", **kwargs
+        self,
+        *args,
+        url,
+        loop=False,
+        autoplay=False,
+        class_="",
+        style_="width: 400px",
+        id="",
+        **kwargs,
     ):
+        if len(id) == 0:
+            id = str(datetime.datetime.now(datetime.UTC).timestamp())
         self.url = url
+        self.id = id
         self.loop = loop
         self.autoplay = autoplay
         self.class_ = class_

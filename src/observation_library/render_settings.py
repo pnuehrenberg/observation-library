@@ -1,5 +1,5 @@
-from typing import Any, List, Tuple
 from itertools import combinations
+from typing import Any, List, Tuple
 
 import traitlets
 
@@ -36,6 +36,7 @@ class RenderSettings(traitlets.HasTraits):
     apply_highlight_color_to = traitlets.List(default_value=[]).tag(
         config=True, sync=True
     )  # 0: "actor", 1: "receiver"
+    overlay_size = traitlets.Float(default_value=5).tag(config=True, sync=True)
 
     # label related settings
     draw_label = traitlets.Bool(default_value=True).tag(config=True, sync=True)
@@ -157,8 +158,8 @@ class RenderSettings(traitlets.HasTraits):
         self.segments = segments
 
     def reset(self) -> None:
-        for name, trait in RenderSettings().traits().items():
-            if "config" not in trait.metadata:
+        for name in self.config_keys():
+            if name in ["keypoints", "segments"]:
                 continue
             default_value = self.trait_defaults()[name]  # type: ignore
             setattr(self, name, default_value)

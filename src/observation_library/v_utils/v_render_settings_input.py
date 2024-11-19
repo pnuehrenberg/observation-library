@@ -28,6 +28,7 @@ class RenderSettingsInput(v.VuetifyTemplate, RenderSettings):  # type: ignore
         sync=True, **widgets.widget_serialization
     )
     other_color_input = traitlets.Any().tag(sync=True, **widgets.widget_serialization)
+    overlay_size_input = traitlets.Any().tag(sync=True, **widgets.widget_serialization)
 
     text_color_input = traitlets.Any().tag(sync=True, **widgets.widget_serialization)
     box_color_input = traitlets.Any().tag(sync=True, **widgets.widget_serialization)
@@ -69,6 +70,10 @@ class RenderSettingsInput(v.VuetifyTemplate, RenderSettings):  # type: ignore
         )
         self.other_color_input = ColorPicker(color=self.other_color, label="Others")
 
+        self.overlay_size_input = BoundedInput(
+            value=self.overlay_size, min=0.1, step=1, max=100, label="Overlay size (px)"
+        )
+
         self.text_color_input = ColorPicker(color=self.text_color, label="Text")
         self.box_color_input = ColorPicker(color=self.box_color, label="Box")
         self.highlight_color_input = ColorPicker(
@@ -99,6 +104,13 @@ class RenderSettingsInput(v.VuetifyTemplate, RenderSettings):  # type: ignore
         traitlets.link((self, "actor_color"), (self.actor_color_input, "color"))
         traitlets.link((self, "recipient_color"), (self.recipient_color_input, "color"))
         traitlets.link((self, "other_color"), (self.other_color_input, "color"))
+
+        traitlets.link(
+            (self, "overlay_size"),
+            ((self.overlay_size_input, "value")),
+            transform=(float, float),
+        )
+
         traitlets.link((self, "text_color"), (self.text_color_input, "color"))
         traitlets.link((self, "box_color"), (self.box_color_input, "color"))
         traitlets.link((self, "highlight_color"), (self.highlight_color_input, "color"))

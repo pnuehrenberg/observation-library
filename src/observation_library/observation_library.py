@@ -1,12 +1,12 @@
+from collections.abc import Callable
+from typing import Literal, Type
+
 import ipyvuetify as v
 import pandas as pd
-from typing import Type, Literal
-from collections.abc import Callable
-
-from lazyfilter import lazy_filter
 from interactive_table import InteractiveTable
 from interactive_table.v_callbacks_button import CallbacksButton
 from interactive_table.v_dialog import Dialog
+from lazyfilter import lazy_filter
 
 from .v_utils.v_render_settings_dialog import RenderSettingsDialog
 from .v_utils.v_video_snippet_display import VideoSnippetDisplay
@@ -51,16 +51,11 @@ class ObservationLibrary(InteractiveTable):
             render_settings=self.render_settings,
         )
         self.video_snippet_display = VideoSnippetDisplay(self.video_snippet)
-        self.reload_video_snippet = CallbacksButton(
-            icon=True,
-            children=[v.Icon(children=["mdi-replay"])],
-        )
         self.video_snippet_dialog = Dialog(
             content=[self.video_snippet_display],
             actions=[
                 self.video_snippet_display.video_container.loop_switch,
                 v.Spacer(),
-                self.reload_video_snippet,
                 self.render_settings_dialog,
             ],
             open_button="",
@@ -72,13 +67,15 @@ class ObservationLibrary(InteractiveTable):
                 or True,
             ],
         )
-        self.reload_video_snippet.callbacks = [
+        self.video_snippet_dialog.on_open_callbacks = [
             lambda: self.video_snippet_display.cut(
                 video_snippet_dialog=self.video_snippet_dialog
             )
         ]
-        self.video_snippet_dialog.on_open_callbacks = (
-            self.reload_video_snippet.callbacks
+        self.render_settings_dialog.on_submit_callbacks.append(
+            lambda: self.video_snippet_display.cut(
+                video_snippet_dialog=self.video_snippet_dialog
+            )
         )
         self.video_lookup = video_lookup
         self.trajectory_lookup = trajectory_lookup

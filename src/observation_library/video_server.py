@@ -12,8 +12,8 @@ class VideoHandler(http.server.SimpleHTTPRequestHandler):
         self.port = port
         super().__init__(*args, **kwargs)
 
-    # def log_request(self, code="-", size="-"):
-    #     return
+    def log_request(self, code="-", size="-"):
+        return
 
     def do_GET(self):
         if self.path == "/":
