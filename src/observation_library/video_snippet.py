@@ -17,6 +17,7 @@ from .utils import ImageOverlay, adjust_lightness, crop_and_scale
 
 
 def hash_dict(dictionary):
+    # TODO: import from pyTrajectory if implemented there
     return hashlib.sha1(
         json.dumps(dictionary, sort_keys=True).encode("utf-8")
     ).hexdigest()
@@ -26,11 +27,16 @@ def get_roi(trajectories, individuals, interval):
     x_lim = []
     y_lim = []
     for individual in individuals:
-        trajectory = trajectories[individual].slice_window(
-            start=interval[0], stop=interval[1]
-        )
+        trajectory = trajectories[individual]
         if len(trajectory) == 0:
             continue
+        first, last = trajectory.timestamps.min(), trajectory.timestamps.max()
+        trajectory = trajectory.slice_window(
+            start=max(first, interval[0]),
+            stop=min(last, interval[1]),
+            interpolate=False,
+            copy=False,
+        )
         x_lim_, y_lim_ = get_trajectory_range(trajectory)
         x_lim.append(x_lim_)
         y_lim.append(y_lim_)

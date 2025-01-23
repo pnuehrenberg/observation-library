@@ -4,7 +4,6 @@ from typing import Literal, Type
 import ipyvuetify as v
 import pandas as pd
 from interactive_table import InteractiveTable
-from interactive_table.v_callbacks_button import CallbacksButton
 from interactive_table.v_dialog import Dialog
 from lazyfilter import lazy_filter
 
@@ -28,6 +27,7 @@ class ObservationLibrary(InteractiveTable):
         *,
         video_lookup,
         trajectory_lookup=None,
+        num_keypoints=None,
         filter_dependencies=None,
         video_snippet_directory="video_snippets",
         selected_observations_mode: Literal["selected", "dyad"] = "dyad",
@@ -35,11 +35,15 @@ class ObservationLibrary(InteractiveTable):
             Literal["selected", "category"] | Callable[[dict, dict], bool]
         ) = "selected",
     ):
+        if trajectory_lookup is not None and num_keypoints is None:
+            raise ValueError("specify number of trajectory keypoints")
         self.observations = observations
         self.render_settings_dialog = RenderSettingsDialog()
         self.render_settings = (
             self.render_settings_dialog.render_settings_input
         )  # shortcut
+        if num_keypoints is not None:
+            self.render_settings.available_keypoints = list(range(num_keypoints))
         self.render_settings.categories = observations[
             "category"
         ].dtype.categories.tolist()

@@ -5,7 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "observation_library"
 version = "0.0.1"
-dependencies = ["numpy>=2.0", "pandas", "ipyvuetify"]
+dependencies = [
+    "numpy>=2.0",
+    "pandas",
+    "ipyvuetify",
+    "opencv-python-headless",
+    "imageio[ffmpeg]",
+]
 
 [tool.pyright]
 venvPath = "/home/paul/miniforge3/envs"

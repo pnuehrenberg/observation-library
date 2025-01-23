@@ -99,14 +99,14 @@ class ImageOverlay:
         canvas = FigureCanvasAgg(self.fig)
         canvas.draw()
         *_, width, height = canvas.figure.bbox.bounds
-        width, height = int(round(width)), int(round(height))
-        if width != self.render_size[0] or height != self.render_size[1]:
-            raise ValueError(
-                f"image size ({width, height}) does not match render size ({tuple(self.render_size)})"
-            )
+        width, height = int(width), int(height)
         buffer = canvas.buffer_rgba()
         overlay_numpy = np.frombuffer(buffer, dtype=np.uint8)
-        return overlay_numpy.reshape(height, width, 4)
+        overlay_numpy = overlay_numpy.reshape(height, width, 4)
+        if width != self.render_size[0] or height != self.render_size[1]:
+            # this can appareantly occur due to figure bbox rounding
+            overlay_numpy = cv2.resize(overlay_numpy, tuple(map(int, self.render_size)))
+        return overlay_numpy
 
     def _to_rgb(self, image, background_color=(255, 255, 255)):
         """
