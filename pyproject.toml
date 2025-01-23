@@ -11,6 +11,7 @@ dependencies = [
     "ipyvuetify",
     "opencv-python-headless",
     "imageio[ffmpeg]",
+    "observation-library @ git+ssh://git@github.com/pnuehrenberg/interactive-table.git",
 ]
 
 [tool.pyright]
