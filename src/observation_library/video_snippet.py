@@ -1,17 +1,14 @@
-import hashlib
-import json
 import os
 from threading import current_thread
 
+import automated_scoring.features as asf
 import cv2
 import imageio
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-
-import automated_scoring.features as asf
 from automated_scoring.data_structures.utils import OutOfInterval
-from automated_scoring.visualization import get_trajectory_range
 from automated_scoring.utils import hash_dict
+from automated_scoring.visualization import get_trajectory_range
+from matplotlib.collections import LineCollection
 
 from .multi_video_capture import MultiVideoCapture
 from .render_settings import RenderSettings

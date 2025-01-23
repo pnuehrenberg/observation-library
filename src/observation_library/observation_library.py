@@ -3,6 +3,7 @@ from typing import Literal, Type
 
 import ipyvuetify as v
 import pandas as pd
+from automated_scoring.dataset import Dataset
 from interactive_table import InteractiveTable
 from interactive_table.v_dialog import Dialog
 from lazyfilter import lazy_filter
@@ -23,7 +24,7 @@ def is_same_category(observation, reference):
 class ObservationLibrary(InteractiveTable):
     def __init__(
         self,
-        observations,
+        observations: pd.DataFrame | Dataset,
         *,
         video_lookup,
         trajectory_lookup=None,
@@ -35,6 +36,12 @@ class ObservationLibrary(InteractiveTable):
             Literal["selected", "category"] | Callable[[dict, dict], bool]
         ) = "selected",
     ):
+        if isinstance(observations, Dataset):
+            trajectory_lookup = {
+                group_key: observations.select(group_key).trajectories
+                for group_key in observations.group_keys
+            }
+            observations = observations.get_observations()
         if trajectory_lookup is not None and num_keypoints is None:
             raise ValueError("specify number of trajectory keypoints")
         self.observations = observations
