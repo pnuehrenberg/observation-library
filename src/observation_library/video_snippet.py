@@ -6,21 +6,16 @@ from threading import current_thread
 import cv2
 import imageio
 import matplotlib.pyplot as plt
-import pyTrajectory.features as ptf
 from matplotlib.collections import LineCollection
-from pyTrajectory.data_structures.utils import OutOfInterval
-from pyTrajectory.visualization import get_trajectory_range
+
+import automated_scoring.features as asf
+from automated_scoring.data_structures.utils import OutOfInterval
+from automated_scoring.visualization import get_trajectory_range
+from automated_scoring.utils import hash_dict
 
 from .multi_video_capture import MultiVideoCapture
 from .render_settings import RenderSettings
 from .utils import ImageOverlay, adjust_lightness, crop_and_scale
-
-
-def hash_dict(dictionary):
-    # TODO: import from pyTrajectory if implemented there
-    return hashlib.sha1(
-        json.dumps(dictionary, sort_keys=True).encode("utf-8")
-    ).hexdigest()
 
 
 def get_roi(trajectories, individuals, interval):
@@ -290,11 +285,11 @@ class VideoSnippet:
                     except OutOfInterval:
                         continue
                     try:
-                        keypoints = ptf.keypoints(
+                        keypoints = asf.keypoints(
                             trajectory,
                             keypoints=tuple(self.render_settings.keypoints),
                         )
-                        segments = ptf.posture_segments(
+                        segments = asf.posture_segments(
                             trajectory,
                             keypoint_pairs=tuple(self.render_settings.get_segments()),
                         )
