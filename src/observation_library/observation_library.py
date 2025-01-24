@@ -1,9 +1,11 @@
+import warnings
 from collections.abc import Callable
 from typing import Literal, Type
 
 import ipyvuetify as v
 import pandas as pd
 from automated_scoring.dataset import Dataset
+from automated_scoring.utils import warning_only
 from interactive_table import InteractiveTable
 from interactive_table.v_dialog import Dialog
 from lazyfilter import lazy_filter
@@ -42,6 +44,11 @@ class ObservationLibrary(InteractiveTable):
                 for group_key in observations.group_keys
             }
             observations = observations.get_observations()
+            na_rows = observations.isna().any(axis=1)
+            if (num_na_rows := na_rows.sum()) > 0:
+                with warning_only():
+                    warnings.warn(f"Dropping {num_na_rows} rows with NaN values")
+                observations = observations[~na_rows].reset_index(drop=True)
         if trajectory_lookup is not None and num_keypoints is None:
             raise ValueError("specify number of trajectory keypoints")
         self.observations = observations
