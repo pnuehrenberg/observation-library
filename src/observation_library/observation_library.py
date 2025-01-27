@@ -1,13 +1,18 @@
 import warnings
-from collections.abc import Callable
-from typing import Literal, Type
+from collections.abc import Callable, Sequence
+from typing import Literal, Optional, Type, Any
 
 import ipyvuetify as v
 import pandas as pd
+
 from automated_scoring.dataset import Dataset
+from automated_scoring.dataset.types.utils import Identity
+from automated_scoring.data_structures import Trajectory
 from automated_scoring.utils import warning_only
+
 from interactive_table import InteractiveTable
 from interactive_table.v_dialog import Dialog
+
 from lazyfilter import lazy_filter
 
 from .v_utils.v_render_settings_dialog import RenderSettingsDialog
@@ -15,11 +20,11 @@ from .v_utils.v_video_snippet_display import VideoSnippetDisplay
 from .video_snippet import VideoSnippet
 
 
-def is_same_observation(observation, reference):
+def is_same_observation(observation: pd.Series | dict[str, Any], reference: pd.Series | dict[str, Any]) -> bool:
     return all([observation[key] == reference[key] for key in observation])
 
 
-def is_same_category(observation, reference):
+def is_same_category(observation: pd.Series | dict[str, Any], reference: pd.Series | dict[str, Any]) -> bool:
     return observation["category"] == reference["category"]
 
 
@@ -28,15 +33,16 @@ class ObservationLibrary(InteractiveTable):
         self,
         observations: pd.DataFrame | Dataset,
         *,
-        video_lookup,
-        trajectory_lookup=None,
-        num_keypoints=None,
-        filter_dependencies=None,
-        video_snippet_directory="video_snippets",
+        video_lookup: dict[Identity, Sequence[str]],
+        trajectory_lookup: Optional[dict[Identity, dict[Identity, Trajectory]]] = None,
+        num_keypoints: Optional[int] = None,
+        filter_dependencies: Optional[dict[str, tuple[str, ...]]] = None,
+        video_snippet_directory: str = "video_snippets",
         selected_observations_mode: Literal["selected", "dyad"] = "dyad",
         highlight_observations_mode: (
             Literal["selected", "category"] | Callable[[dict, dict], bool]
         ) = "selected",
+        observations_transform: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
     ):
         if isinstance(observations, Dataset):
             trajectory_lookup = {
@@ -44,11 +50,21 @@ class ObservationLibrary(InteractiveTable):
                 for group_key in observations.group_keys
             }
             observations = observations.get_observations()
-            na_rows = observations.isna().any(axis=1)
-            if (num_na_rows := na_rows.sum()) > 0:
-                with warning_only():
-                    warnings.warn(f"Dropping {num_na_rows} rows with NaN values")
-                observations = observations[~na_rows].reset_index(drop=True)
+        na_rows = observations.isna().any(axis=1)
+        invalid_observations_error = ValueError(
+            "observations must be a valid pandas DataFrame or Dataset"
+        )
+        if not isinstance(na_rows, pd.Series):
+            raise invalid_observations_error
+        if (num_na_rows := na_rows.sum()) > 0:
+            with warning_only():
+                warnings.warn(f"Dropping {num_na_rows} rows with NaN values")
+            observations_cleaned = observations[~na_rows].reset_index(drop=True)
+            if not isinstance(observations_cleaned, pd.DataFrame):
+                raise invalid_observations_error
+            observations = observations_cleaned
+        if observations_transform is not None:
+            observations = observations_transform(observations)
         if trajectory_lookup is not None and num_keypoints is None:
             raise ValueError("specify number of trajectory keypoints")
         self.observations = observations
@@ -58,6 +74,8 @@ class ObservationLibrary(InteractiveTable):
         )  # shortcut
         if num_keypoints is not None:
             self.render_settings.available_keypoints = list(range(num_keypoints))
+        if not isinstance(observations["category"].dtype, pd.CategoricalDtype):
+            raise ValueError("observations must have a categorical 'category' column")
         self.render_settings.categories = observations[
             "category"
         ].dtype.categories.tolist()
