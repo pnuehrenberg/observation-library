@@ -5,10 +5,10 @@ from typing import Literal, Optional, Type, Any
 import ipyvuetify as v
 import pandas as pd
 
-from automated_scoring.dataset import Dataset
-from automated_scoring.dataset.types.utils import Identity
+from automated_scoring.dataset import AnnotatedDataset
+from automated_scoring.dataset.utils import GroupIdentifier, IndividualIdentifier
 from automated_scoring.data_structures import Trajectory
-from automated_scoring.utils import warning_only
+from automated_scoring.logging import set_logging_level
 
 from interactive_table import InteractiveTable
 from interactive_table.v_dialog import Dialog
@@ -31,10 +31,10 @@ def is_same_category(observation: pd.Series | dict[str, Any], reference: pd.Seri
 class ObservationLibrary(InteractiveTable):
     def __init__(
         self,
-        observations: pd.DataFrame | Dataset,
+        observations: pd.DataFrame | AnnotatedDataset,
         *,
-        video_lookup: dict[Identity, Sequence[str]],
-        trajectory_lookup: Optional[dict[Identity, dict[Identity, Trajectory]]] = None,
+        video_lookup: dict[GroupIdentifier, Sequence[str]],
+        trajectory_lookup: Optional[dict[GroupIdentifier, dict[IndividualIdentifier, Trajectory]]] = None,
         num_keypoints: Optional[int] = None,
         filter_dependencies: Optional[dict[str, tuple[str, ...]]] = None,
         video_snippet_directory: str = "video_snippets",
@@ -44,12 +44,12 @@ class ObservationLibrary(InteractiveTable):
         ) = "selected",
         observations_transform: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
     ):
-        if isinstance(observations, Dataset):
+        if isinstance(observations, AnnotatedDataset):
             trajectory_lookup = {
-                group_key: observations.select(group_key).trajectories
-                for group_key in observations.group_keys
+                identifier: group.trajectories
+                for identifier, group in observations
             }
-            observations = observations.get_observations()
+            observations = observations.observations
         na_rows = observations.isna().any(axis=1)
         invalid_observations_error = ValueError(
             "observations must be a valid pandas DataFrame or Dataset"
@@ -57,8 +57,7 @@ class ObservationLibrary(InteractiveTable):
         if not isinstance(na_rows, pd.Series):
             raise invalid_observations_error
         if (num_na_rows := na_rows.sum()) > 0:
-            with warning_only():
-                warnings.warn(f"Dropping {num_na_rows} rows with NaN values")
+            set_logging_level().warning(f"Dropping {num_na_rows} rows with NaN values")
             observations_cleaned = observations[~na_rows].reset_index(drop=True)
             if not isinstance(observations_cleaned, pd.DataFrame):
                 raise invalid_observations_error
