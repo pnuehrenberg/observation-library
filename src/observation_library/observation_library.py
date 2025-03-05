@@ -1,5 +1,5 @@
 import warnings
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Sequence, Hashable
 from typing import Literal, Optional, Type, Any
 
 import ipyvuetify as v
@@ -20,11 +20,11 @@ from .v_utils.v_video_snippet_display import VideoSnippetDisplay
 from .video_snippet import VideoSnippet
 
 
-def is_same_observation(observation: pd.Series | dict[str, Any], reference: pd.Series | dict[str, Any]) -> bool:
-    return all([observation[key] == reference[key] for key in observation])
+def is_same_observation(observation: pd.Series | dict[Hashable, Any], reference: pd.Series | dict[Hashable, Any]) -> bool:
+    return all([observation[str(key)] == reference[str(key)] for key in observation])
 
 
-def is_same_category(observation: pd.Series | dict[str, Any], reference: pd.Series | dict[str, Any]) -> bool:
+def is_same_category(observation: pd.Series | dict[Hashable, Any], reference: pd.Series | dict[Hashable, Any]) -> bool:
     return observation["category"] == reference["category"]
 
 
