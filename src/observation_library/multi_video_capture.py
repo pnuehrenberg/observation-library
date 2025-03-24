@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import cv2
-from numpy.typing import NDArray
+import numpy as np
 
 
 class MultiVideoCapture:
@@ -147,7 +147,7 @@ class MultiVideoCapture:
         self.active_cap_idx = idx
         self.cap.set(prop_id, value - first_frame)
 
-    def read(self) -> Tuple[bool, NDArray | None]:
+    def read(self) -> Tuple[bool, np.ndarray | None]:
         """
         Reads the next frame from the active video capture.
 

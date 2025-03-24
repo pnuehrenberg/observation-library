@@ -14,7 +14,7 @@ class RenderSettingsDialog(Dialog):
             title="Render settings",
             content=[self.render_settings_input],
             actions=[undo_button, v.Spacer()],
-            open_button="mdi-settings",
+            open_button="mdi-cog",
             open_button_icon=True,
             on_open_callbacks=[
                 lambda: self._set_confirmed(False),

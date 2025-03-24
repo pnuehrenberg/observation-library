@@ -9,12 +9,14 @@
                     {{ label }}
                 </div>
                 <v-btn
-                    outlined
                     icon
                     v-bind="attrs"
                     v-on="on"
-                    :color="color"
-                    style="border: 2px solid black"
+                    :style="{
+                        border: '2px solid black',
+                        'border-radius': '50%',
+                        'background-color': color,
+                    }"
                 >
                     <v-icon x-large>mdi-circle</v-icon>
                 </v-btn>
