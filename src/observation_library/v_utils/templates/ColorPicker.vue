@@ -18,7 +18,6 @@
                         'background-color': color,
                     }"
                 >
-                    <v-icon x-large>mdi-circle</v-icon>
                 </v-btn>
             </div>
         </template>
