@@ -7,12 +7,12 @@ import imageio
 import matplotlib.pyplot as plt
 from automated_scoring.data_structures.utils import OutOfInterval
 from automated_scoring.utils import hash_dict
-from automated_scoring.visualization import get_trajectory_range
+from automated_scoring.visualization import get_trajectory_range, adjust_lightness
 from matplotlib.collections import LineCollection
 
 from .multi_video_capture import MultiVideoCapture
 from .render_settings import RenderSettings
-from .utils import ImageOverlay, adjust_lightness, crop_and_scale
+from .utils import ImageOverlay, crop_and_scale
 
 
 def get_roi(trajectories, individuals, interval):

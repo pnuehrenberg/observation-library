@@ -5,19 +5,6 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from PIL import Image
 
 
-def adjust_lightness(color, amount):
-    import colorsys
-
-    import matplotlib.colors as mc
-
-    try:
-        c = mc.cnames[color]
-    except KeyError:
-        c = color
-    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
-    return colorsys.hls_to_rgb(c[0], max(0, min(1, amount * c[1])), c[2])
-
-
 def closest_divisible(number: float, divisor: int) -> int:
     remainder = number % divisor
     closest_smaller_number = number - remainder
