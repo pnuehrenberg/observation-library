@@ -3,6 +3,7 @@ from collections.abc import Callable, Sequence, Hashable
 from typing import Literal, Optional, Type, Any
 
 import ipyvuetify as v
+from ipywidgets.widgets import Video
 import pandas as pd
 
 from automated_scoring.dataset import AnnotatedDataset
@@ -43,6 +44,7 @@ class ObservationLibrary(InteractiveTable):
             Literal["selected", "category"] | Callable[[dict, dict], bool]
         ) = "selected",
         observations_transform: Optional[Callable[[pd.DataFrame], pd.DataFrame]] = None,
+        visible_columns=None,
     ):
         if isinstance(observations, AnnotatedDataset):
             trajectory_lookup = {
@@ -124,6 +126,7 @@ class ObservationLibrary(InteractiveTable):
             self.observations,
             filter_dependencies=filter_dependencies,
             show_index=True,
+            visible_columns=visible_columns,
             actions={"mdi-play-circle-outline": self.open_video_snippet_dialog},
             action_dialogs=[self.video_snippet_dialog],
         )
