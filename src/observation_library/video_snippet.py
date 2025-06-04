@@ -1,13 +1,13 @@
 import os
 from threading import current_thread
 
-import automated_scoring.features as asf
+import vassi.features as asf
 import cv2
 import imageio
 import matplotlib.pyplot as plt
-from automated_scoring.data_structures.utils import OutOfInterval
-from automated_scoring.utils import hash_dict
-from automated_scoring.visualization import get_trajectory_range, adjust_lightness
+from vassi.data_structures.utils import OutOfInterval
+from vassi.utils import hash_dict
+from vassi.visualization import get_trajectory_range, adjust_lightness
 from matplotlib.collections import LineCollection
 
 from .multi_video_capture import MultiVideoCapture

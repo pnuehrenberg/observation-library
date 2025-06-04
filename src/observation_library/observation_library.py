@@ -6,10 +6,10 @@ import ipyvuetify as v
 from ipywidgets.widgets import Video
 import pandas as pd
 
-from automated_scoring.dataset import AnnotatedDataset
-from automated_scoring.dataset.utils import GroupIdentifier, IndividualIdentifier
-from automated_scoring.data_structures import Trajectory
-from automated_scoring.logging import set_logging_level
+from vassi.dataset import AnnotatedDataset
+from vassi.dataset.utils import GroupIdentifier, IndividualIdentifier
+from vassi.data_structures import Trajectory
+from vassi.logging import set_logging_level
 
 from interactive_table import InteractiveTable
 from interactive_table.v_dialog import Dialog
