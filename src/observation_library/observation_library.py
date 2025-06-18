@@ -1,31 +1,33 @@
-import warnings
-from collections.abc import Callable, Sequence, Hashable
-from typing import Literal, Optional, Type, Any
+from collections.abc import Callable, Hashable, Sequence
+from pathlib import Path
+from typing import Any, Literal, Optional, Type
 
 import ipyvuetify as v
-from ipywidgets.widgets import Video
 import pandas as pd
-
-from vassi.dataset import AnnotatedDataset
-from vassi.dataset.utils import GroupIdentifier, IndividualIdentifier
-from vassi.data_structures import Trajectory
-from vassi.logging import set_logging_level
-
 from interactive_table import InteractiveTable
 from interactive_table.v_dialog import Dialog
-
 from lazyfilter import lazy_filter
+from vassi.data_structures import Trajectory
+from vassi.dataset import AnnotatedDataset
+from vassi.dataset.utils import GroupIdentifier, IndividualIdentifier
+from vassi.logging import set_logging_level
 
 from .v_utils.v_render_settings_dialog import RenderSettingsDialog
 from .v_utils.v_video_snippet_display import VideoSnippetDisplay
 from .video_snippet import VideoSnippet
 
 
-def is_same_observation(observation: pd.Series | dict[Hashable, Any], reference: pd.Series | dict[Hashable, Any]) -> bool:
+def is_same_observation(
+    observation: pd.Series | dict[Hashable, Any],
+    reference: pd.Series | dict[Hashable, Any],
+) -> bool:
     return all([observation[str(key)] == reference[str(key)] for key in observation])
 
 
-def is_same_category(observation: pd.Series | dict[Hashable, Any], reference: pd.Series | dict[Hashable, Any]) -> bool:
+def is_same_category(
+    observation: pd.Series | dict[Hashable, Any],
+    reference: pd.Series | dict[Hashable, Any],
+) -> bool:
     return observation["category"] == reference["category"]
 
 
@@ -34,8 +36,10 @@ class ObservationLibrary(InteractiveTable):
         self,
         observations: pd.DataFrame | AnnotatedDataset,
         *,
-        video_lookup: dict[GroupIdentifier, Sequence[str]],
-        trajectory_lookup: Optional[dict[GroupIdentifier, dict[IndividualIdentifier, Trajectory]]] = None,
+        video_lookup: dict[GroupIdentifier, Sequence[str | Path]],
+        trajectory_lookup: Optional[
+            dict[GroupIdentifier, dict[IndividualIdentifier, Trajectory]]
+        ] = None,
         num_keypoints: Optional[int] = None,
         filter_dependencies: Optional[dict[str, tuple[str, ...]]] = None,
         video_snippet_directory: str = "video_snippets",
@@ -48,8 +52,7 @@ class ObservationLibrary(InteractiveTable):
     ):
         if isinstance(observations, AnnotatedDataset):
             trajectory_lookup = {
-                identifier: group.trajectories
-                for identifier, group in observations
+                identifier: group.trajectories for identifier, group in observations
             }
             observations = observations.observations
         na_rows = observations.isna().any(axis=1)

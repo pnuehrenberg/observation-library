@@ -1,14 +1,16 @@
 import os
+from collections.abc import Sequence
+from pathlib import Path
 from threading import current_thread
 
-import vassi.features as asf
 import cv2
 import imageio
 import matplotlib.pyplot as plt
+import vassi.features as asf
+from matplotlib.collections import LineCollection
 from vassi.data_structures.utils import OutOfInterval
 from vassi.utils import hash_dict
-from vassi.visualization import get_trajectory_range, adjust_lightness
-from matplotlib.collections import LineCollection
+from vassi.visualization import adjust_lightness, get_trajectory_range
 
 from .multi_video_capture import MultiVideoCapture
 from .render_settings import RenderSettings
@@ -48,7 +50,7 @@ def get_roi(trajectories, individuals, interval):
 class VideoSnippet:
     def __init__(
         self,
-        video_files,
+        video_files: Sequence[str | Path],
         *,
         start,
         stop,
@@ -57,7 +59,7 @@ class VideoSnippet:
     ):
         self.output_files = []
         self._cap = None
-        self._video_files = None
+        self._video_files: Sequence[str | Path] | None = None
         if len(video_files) > 0:
             self.video_files = video_files
         self.render_settings = (

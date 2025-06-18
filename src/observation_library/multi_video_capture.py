@@ -45,7 +45,7 @@ class MultiVideoCapture:
         self.cumulative_frames = []  # Cumulative frame count for each video
 
         for path in video_paths:
-            cap = cv2.VideoCapture(path)
+            cap = cv2.VideoCapture(str(path))
             if not cap.isOpened():
                 raise ValueError(f"Error opening video: {path}")
 
